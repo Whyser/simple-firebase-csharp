@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Net;
 using System.IO;
+using UnityEngine;
 
 namespace FirebaseCSharp
 {
@@ -250,39 +251,8 @@ namespace FirebaseCSharp
                 rq.Method = "GET";
                 rq.ContentLength = 0;
 
-                rq.BeginGetResponse(new AsyncCallback((result) =>
-                {
-                    HttpWebResponse response = (result.AsyncState as HttpWebRequest).EndGetResponse(result) as HttpWebResponse;
-                    using (HttpWebResponse resp = response)
-                    {
-                        string responseValue = string.Empty;
-
-                        if (resp.StatusCode != HttpStatusCode.OK)
-                        {
-                            if (OnFetchFailed != null) OnFetchFailed(this, new FirebaseError(string.Format("Request failed. Received HTTP {0}", resp.StatusCode)));
-                            return;
-                        }
-
-                        using (Stream responseStream = resp.GetResponseStream())
-                        {
-                            if (responseStream != null)
-                                using (StreamReader rdr = new StreamReader(responseStream))
-                                {
-                                    responseValue = rdr.ReadToEnd();
-                                }
-                        }
-
-                        if (responseValue != "")
-                        {
-                            DataSnapshot snapshot = new DataSnapshot(responseValue);
-                            if (OnFetchSuccess != null) OnFetchSuccess(this, snapshot);
-                        }
-                        else
-                        {
-                            if (OnFetchFailed != null) OnFetchFailed(this, new FirebaseError("No response received."));
-                        }
-                    }
-                }), rq);
+                GetResponseFromWebRequest(rq, OnFetchSuccess, OnFetchFailed);
+                
             }
             catch (Exception ex)
             {
@@ -307,6 +277,8 @@ namespace FirebaseCSharp
             else
                 SetValue(Json.Deserialize(json), param);
         }
+
+        //System.Threading.ManualResetEvent allDone = new System.Threading.ManualResetEvent(false);
 
         /// <summary>
         /// Update value of a key on Firebase. Calls OnUpdateSuccess on success, OnUpdateFailed on failed.
@@ -364,50 +336,8 @@ namespace FirebaseCSharp
                 byte[] bytes = Encoding.GetEncoding("iso-8859-1").GetBytes(Json.Serialize(_val));
                 rq.ContentLength = bytes.Length;
 
-
-                rq.BeginGetRequestStream(new AsyncCallback((result) => 
-                {
-                    Stream responseStream = (result.AsyncState as HttpWebRequest).EndGetRequestStream(result) as Stream;
-                    using (Stream writeStream = responseStream)
-                    {
-                        writeStream.Write(bytes, 0, bytes.Length);
-                    }
-                }), rq);
-
-                rq.BeginGetResponse(new AsyncCallback((result) =>
-                {
-                    HttpWebResponse response = (result.AsyncState as HttpWebRequest).EndGetResponse(result) as HttpWebResponse;
-                    using (HttpWebResponse resp = response)
-                    {
-                        string responseValue = string.Empty;
-
-                        if (resp.StatusCode != HttpStatusCode.OK)
-                        {
-                            if (OnUpdateFailed != null) OnUpdateFailed(this, new FirebaseError(string.Format("Request failed. Received HTTP {0}", resp.StatusCode)));
-                            return;
-                        }
-
-                        using (Stream responseStream = resp.GetResponseStream())
-                        {
-                            if (responseStream != null)
-                                using (StreamReader rdr = new StreamReader(responseStream))
-                                {
-                                    responseValue = rdr.ReadToEnd();
-                                }
-                        }
-
-                        if (responseValue != "")
-                        {
-                            DataSnapshot snapshot = new DataSnapshot(responseValue);
-                            if (OnUpdateSuccess != null) OnUpdateSuccess(this, snapshot);
-                        }
-                        else
-                        {
-                            if (OnUpdateFailed != null) OnUpdateFailed(this, new FirebaseError("No response received."));
-                        }
-                    }
-                }), rq);
-
+                WriteBytesToWebStream(rq, bytes);
+                GetResponseFromWebRequest(rq, OnUpdateSuccess, OnUpdateFailed);
             }
             catch (Exception ex)
             {
@@ -498,48 +428,8 @@ namespace FirebaseCSharp
                 byte[] bytes = Encoding.GetEncoding("iso-8859-1").GetBytes(Json.Serialize(_val));
                 rq.ContentLength = bytes.Length;
 
-                rq.BeginGetRequestStream(new AsyncCallback((result) =>
-                {
-                    Stream responseStream = (result.AsyncState as HttpWebRequest).EndGetRequestStream(result) as Stream;
-                    using (Stream writeStream = responseStream)
-                    {
-                        writeStream.Write(bytes, 0, bytes.Length);
-                    }
-                }), rq);
-
-                rq.BeginGetResponse(new AsyncCallback((result) =>
-                {
-                    HttpWebResponse response = (result.AsyncState as HttpWebRequest).EndGetResponse(result) as HttpWebResponse;
-                    using (HttpWebResponse resp = response)
-                    {
-                        string responseValue = string.Empty;
-
-                        if (resp.StatusCode != HttpStatusCode.OK)
-                        {
-                            if (OnPushFailed != null) OnPushFailed(this, new FirebaseError(string.Format("Request failed. Received HTTP {0}", resp.StatusCode)));
-                            return;
-                        }
-
-                        using (Stream responseStream = resp.GetResponseStream())
-                        {
-                            if (responseStream != null)
-                                using (StreamReader rdr = new StreamReader(responseStream))
-                                {
-                                    responseValue = rdr.ReadToEnd();
-                                }
-                        }
-
-                        if (responseValue != "")
-                        {
-                            DataSnapshot snapshot = new DataSnapshot(responseValue);
-                            if (OnPushSuccess != null) OnPushSuccess(this, snapshot);
-                        }
-                        else
-                        {
-                            if (OnPushFailed != null) OnPushFailed(this, new FirebaseError("No response received."));
-                        }
-                    }
-                }), rq);
+                WriteBytesToWebStream(rq, bytes);
+                GetResponseFromWebRequest(rq, OnPushSuccess, OnPushFailed);
             }
             catch (Exception ex)
             {
@@ -607,39 +497,7 @@ namespace FirebaseCSharp
                 rq.ContentLength = 0;
                 rq.ContentType = "application/json";
 
-                rq.BeginGetResponse(new AsyncCallback((result) =>
-                {
-                    HttpWebResponse response = (result.AsyncState as HttpWebRequest).EndGetResponse(result) as HttpWebResponse;
-                    using (HttpWebResponse resp = response)
-                    {
-                        string responseValue = string.Empty;
-
-                        if (resp.StatusCode != HttpStatusCode.OK)
-                        {
-                            if (OnDeleteFailed != null) OnDeleteFailed(this, new FirebaseError(string.Format("Request failed. Received HTTP {0}", resp.StatusCode)));
-                            return;
-                        }
-
-                        using (Stream responseStream = resp.GetResponseStream())
-                        {
-                            if (responseStream != null)
-                                using (StreamReader rdr = new StreamReader(responseStream))
-                                {
-                                    responseValue = rdr.ReadToEnd();
-                                }
-                        }
-
-                        if (responseValue != "")
-                        {
-                            DataSnapshot snapshot = new DataSnapshot(responseValue);
-                            if (OnDeleteSuccess != null) OnDeleteSuccess(this, snapshot);
-                        }
-                        else
-                        {
-                            if (OnDeleteFailed != null) OnDeleteFailed(this, new FirebaseError("No response received."));
-                        }
-                    }
-                }), rq);
+                GetResponseFromWebRequest(rq, OnDeleteSuccess, OnDeleteFailed);
             }
             catch (Exception ex)
             {
@@ -658,6 +516,79 @@ namespace FirebaseCSharp
         {
             Delete(query.Parameter);
         }
+
+        private void WriteBytesToWebStream(WebRequest rq, byte[] bytes)
+        {
+            rq.BeginGetRequestStream(new AsyncCallback((result) =>
+            {
+                Stream responseStream = (result.AsyncState as HttpWebRequest).EndGetRequestStream(result) as Stream;
+                using (Stream writeStream = responseStream)
+                {
+                    writeStream.Write(bytes, 0, bytes.Length);
+                }
+            }), rq);
+        }
+
+        private void GetResponseFromWebRequest(WebRequest rq, Action<Firebase, DataSnapshot> onSuccess, Action<Firebase, FirebaseError> onError)
+        {
+            SimpleUnityThread.Prepare();
+
+            rq.BeginGetResponse(new AsyncCallback((result) =>
+            {
+                HttpWebResponse response = (result.AsyncState as HttpWebRequest).EndGetResponse(result) as HttpWebResponse;
+                using (HttpWebResponse resp = response)
+                {
+                    string responseValue = string.Empty;
+
+                    if (resp.StatusCode != HttpStatusCode.OK)
+                    {
+                        if(onError != null)
+                        {
+                            SimpleUnityThread.Dispatch(() =>
+                            {
+                                onError(this, new FirebaseError(string.Format("Request failed. Received HTTP {0}", resp.StatusCode)));
+                            });
+                        }
+                        return;
+                    }
+
+                    using (Stream responseStream = resp.GetResponseStream())
+                    {
+                        if (responseStream != null)
+                        {
+                            using (StreamReader rdr = new StreamReader(responseStream))
+                            {
+                                responseValue = rdr.ReadToEnd();
+                            }
+                        }
+                    }
+
+                    if (responseValue != "")
+                    {
+                        DataSnapshot snapshot = new DataSnapshot(responseValue);
+                        if (onSuccess != null)
+                        {
+                            SimpleUnityThread.Dispatch(() =>
+                            {
+                                onSuccess(this, snapshot);
+                            });
+                        }
+                            
+                    }
+                    else
+                    {
+                        if (onError != null)
+                        {
+                            SimpleUnityThread.Dispatch(() =>
+                            {
+                                onError(this, new FirebaseError(("No response received.")));
+                            });
+                        }
+                    }
+                }
+            }), rq);
+        }
+
 
         /**** TO COROUTINE WRAPPERS ****/
 
@@ -768,6 +699,55 @@ namespace FirebaseCSharp
 
         }
 
+        public class SimpleUnityThread : MonoBehaviour
+        {
+            private static SimpleUnityThread _instance = null;
+            private static SimpleUnityThread Instance
+            {
+                get
+                {
+                    if(_instance == null)
+                    {
+                        _instance = new GameObject("FirebaseCSharp").AddComponent<SimpleUnityThread>();
+                    }
 
+                    return _instance;
+                }
+            }
+
+            private object workQueueLock = new object();
+            private Queue<Action> workQueue = new Queue<Action>();
+
+            void Update()
+            {
+                if(workQueue.Count > 0)
+                {
+                    lock(workQueueLock)
+                    {
+                        workQueue.Dequeue().Invoke();
+                    }
+                }
+            }
+
+            public static void Dispatch(Action work)
+            {
+                if (work == null)
+                    return;
+
+                lock (Instance.workQueueLock)
+                {
+                    Instance.workQueue.Enqueue(work);
+                }
+            }
+
+            /// <summary>
+            /// Call this when on the Unity-thread to make sure we've managed setup properly before using anything else
+            /// NOTE: If this is called while on a worker-thread, things won't work.
+            /// </summary>
+            public static void Prepare()
+            {
+                SimpleUnityThread t = Instance;
+            }
+        }
     }
 }
