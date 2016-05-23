@@ -33,8 +33,6 @@ Copyright (c) 2016  M Dikra Prasetya
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Net;
-using System.IO;
 using UnityEngine;
 
 namespace FirebaseCSharp

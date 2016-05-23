@@ -38,7 +38,6 @@ namespace FirebaseCSharp
 {
     internal class FirebaseRoot : Firebase
     {
-        private static bool firstTimeInitiated = true;
         private string host;
         private string cred;
 
@@ -71,14 +70,6 @@ namespace FirebaseCSharp
 
         public FirebaseRoot(string _host, string _cred = "")
         {
-            /*
-            if (firstTimeInitiated)
-            {
-                ServicePointManager.ServerCertificateValidationCallback += new RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) => { return true; });
-                firstTimeInitiated = false;
-            }
-            */
-
             root = this;
             host = _host;
             cred = _cred;
@@ -95,12 +86,5 @@ namespace FirebaseCSharp
                 return host;
             }
         }
-
-        /*
-        private static bool RemoteCertificateValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-        {
-            return true; // override certificate, we trust Firebase :D
-        }
-        */
     }
 }
