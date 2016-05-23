@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("FirebaseCSharp")]
+[assembly: AssemblyTitle("FirebaseCSharp.Unity")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("FirebaseCSharp")]
+[assembly: AssemblyProduct("FirebaseCSharp.Unity")]
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("b5c80acf-6af1-4dc7-809d-b22d65c1a909")]
+[assembly: Guid("2e06637a-4e04-4d52-9bf6-d4b004a53e53")]
 
 // Version information for an assembly consists of the following four values:
 //

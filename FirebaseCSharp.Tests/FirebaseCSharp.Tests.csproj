@@ -57,9 +57,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FirebaseCSharp\FirebaseCSharp.csproj">
-      <Project>{b5c80acf-6af1-4dc7-809d-b22d65c1a909}</Project>
-      <Name>FirebaseCSharp</Name>
+    <ProjectReference Include="..\FirebaseCSharp.Unity\FirebaseCSharp.Unity.csproj">
+      <Project>{2e06637a-4e04-4d52-9bf6-d4b004a53e53}</Project>
+      <Name>FirebaseCSharp.Unity</Name>
     </ProjectReference>
   </ItemGroup>
   <Choose>

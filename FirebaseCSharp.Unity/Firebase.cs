@@ -41,7 +41,7 @@ namespace FirebaseCSharp
 {
     using MiniJSON;
     using System.Collections;
-    [Serializable]
+    //[Serializable]
     public class Firebase
     {
         public Action<Firebase, DataSnapshot> OnFetchSuccess;
@@ -243,16 +243,13 @@ namespace FirebaseCSharp
                 if (param != "")
                     url += "?" + param;
 
-                WebRequest rq = WebRequest.Create(url);
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("X-Http-Method-Override", "GET");
+                headers.Add("Content-Type", "application/json");
+                WWW www = new WWW(url, null, headers);
 
-                rq.Headers = new CusteredHeaderCollection(Host); ;
-                rq.Proxy = null;
+                CoroutineRunner.StartCoroutine(DoRequest(www, OnFetchSuccess, OnFetchFailed));
 
-                rq.Method = "GET";
-                rq.ContentLength = 0;
-
-                GetResponseFromWebRequest(rq, OnFetchSuccess, OnFetchFailed);
-                
             }
             catch (Exception ex)
             {
@@ -321,23 +318,16 @@ namespace FirebaseCSharp
                 if (param != string.Empty)
                     url += "?" + param;
 
-                WebRequest rq = WebRequest.Create(url);
 
-                rq.Headers = new CusteredHeaderCollection(Host); ;
-                rq.Proxy = null;
-
-                rq.Method = "PATCH";
-                rq.ContentLength = 0;
-                rq.ContentType = "application/json";
-
-
-
-                //UTF8Encoding encoding = new UTF8Encoding();
                 byte[] bytes = Encoding.GetEncoding("iso-8859-1").GetBytes(Json.Serialize(_val));
-                rq.ContentLength = bytes.Length;
 
-                WriteBytesToWebStream(rq, bytes);
-                GetResponseFromWebRequest(rq, OnUpdateSuccess, OnUpdateFailed);
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("X-Http-Method-Override", "PATCH");
+                headers.Add("Content-Type", "application/json");
+                headers.Add("Content-Length", bytes.Length.ToString());
+                WWW www = new WWW(url, bytes, headers);
+
+                CoroutineRunner.StartCoroutine(DoRequest(www, OnFetchSuccess, OnFetchFailed));
             }
             catch (Exception ex)
             {
@@ -415,21 +405,17 @@ namespace FirebaseCSharp
                 if (param != string.Empty)
                     url += "?" + param;
 
-                WebRequest rq = WebRequest.Create(url);
-
-                rq.Headers = new CusteredHeaderCollection(Host); ;
-                rq.Proxy = null;
-
-                rq.Method = "POST";
-                rq.ContentLength = 0;
-                rq.ContentType = "application/json";
 
                 //UTF8Encoding encoding = new UTF8Encoding();
                 byte[] bytes = Encoding.GetEncoding("iso-8859-1").GetBytes(Json.Serialize(_val));
-                rq.ContentLength = bytes.Length;
 
-                WriteBytesToWebStream(rq, bytes);
-                GetResponseFromWebRequest(rq, OnPushSuccess, OnPushFailed);
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("X-Http-Method-Override", "POST");
+                headers.Add("Content-Type", "application/json");
+                headers.Add("Content-Length", bytes.Length.ToString());
+                WWW www = new WWW(url, bytes, headers);
+
+                CoroutineRunner.StartCoroutine(DoRequest(www, OnFetchSuccess, OnFetchFailed));
             }
             catch (Exception ex)
             {
@@ -488,16 +474,13 @@ namespace FirebaseCSharp
                 if (param != string.Empty)
                     url += "?" + param;
 
-                WebRequest rq = WebRequest.Create(url);
+                Dictionary<string, string> headers = new Dictionary<string, string>();
+                headers.Add("X-Http-Method-Override", "DELETE");
+                headers.Add("Content-Type", "application/json");
+                WWW www = new WWW(url, null, headers);
 
-                rq.Headers = new CusteredHeaderCollection(Host); ;
-                rq.Proxy = null;
+                CoroutineRunner.StartCoroutine(DoRequest(www, OnFetchSuccess, OnFetchFailed));
 
-                rq.Method = "DELETE";
-                rq.ContentLength = 0;
-                rq.ContentType = "application/json";
-
-                GetResponseFromWebRequest(rq, OnDeleteSuccess, OnDeleteFailed);
             }
             catch (Exception ex)
             {
@@ -517,145 +500,39 @@ namespace FirebaseCSharp
             Delete(query.Parameter);
         }
 
-        private void WriteBytesToWebStream(WebRequest rq, byte[] bytes)
+        private IEnumerator DoRequest(WWW www, Action<Firebase, DataSnapshot> onSuccess, Action<Firebase, FirebaseError> onError)
         {
-            rq.BeginGetRequestStream(new AsyncCallback((result) =>
+            yield return www;
+
+            string responseValue = www.text;
+
+            if (www.error != null)
             {
-                Stream responseStream = (result.AsyncState as HttpWebRequest).EndGetRequestStream(result) as Stream;
-                using (Stream writeStream = responseStream)
+                if (onError != null)
                 {
-                    writeStream.Write(bytes, 0, bytes.Length);
+                    onError(this, new FirebaseError(string.Format("Request failed. Received HTTP {0}", www.error)));
+                    yield return 0;
                 }
-            }), rq);
-        }
-
-        private void GetResponseFromWebRequest(WebRequest rq, Action<Firebase, DataSnapshot> onSuccess, Action<Firebase, FirebaseError> onError)
-        {
-            SimpleUnityThread.Prepare();
-
-            rq.BeginGetResponse(new AsyncCallback((result) =>
+            }
+            else
             {
-                HttpWebResponse response = (result.AsyncState as HttpWebRequest).EndGetResponse(result) as HttpWebResponse;
-                using (HttpWebResponse resp = response)
+                if (responseValue != "" && responseValue != null)
                 {
-                    string responseValue = string.Empty;
-
-                    if (resp.StatusCode != HttpStatusCode.OK)
+                    DataSnapshot snapshot = new DataSnapshot(responseValue);
+                    if (onSuccess != null)
                     {
-                        if(onError != null)
-                        {
-                            SimpleUnityThread.Dispatch(() =>
-                            {
-                                onError(this, new FirebaseError(string.Format("Request failed. Received HTTP {0}", resp.StatusCode)));
-                            });
-                        }
-                        return;
+                        onSuccess(this, snapshot);
                     }
 
-                    using (Stream responseStream = resp.GetResponseStream())
+                }
+                else
+                {
+                    if (onError != null)
                     {
-                        if (responseStream != null)
-                        {
-                            using (StreamReader rdr = new StreamReader(responseStream))
-                            {
-                                responseValue = rdr.ReadToEnd();
-                            }
-                        }
-                    }
-
-                    if (responseValue != "")
-                    {
-                        DataSnapshot snapshot = new DataSnapshot(responseValue);
-                        if (onSuccess != null)
-                        {
-                            SimpleUnityThread.Dispatch(() =>
-                            {
-                                onSuccess(this, snapshot);
-                            });
-                        }
-                            
-                    }
-                    else
-                    {
-                        if (onError != null)
-                        {
-                            SimpleUnityThread.Dispatch(() =>
-                            {
-                                onError(this, new FirebaseError(("No response received.")));
-                            });
-                        }
+                        onError(this, new FirebaseError(("No response received.")));
                     }
                 }
-            }), rq);
-        }
-
-
-        /**** TO COROUTINE WRAPPERS ****/
-
-        /// <summary>
-        /// Wraps function to IEnumerator
-        /// </summary>
-        /// <param name="action">Firebase method</param>
-        /// <returns></returns>
-        public static IEnumerator ToCoroutine(Action<FirebaseParam> action, FirebaseParam query)
-        {
-            action(query);
-            yield return null;
-        }
-
-        /// <summary>
-        /// Wraps function to IEnumerator
-        /// </summary>
-        /// <param name="action">Firebase method</param>
-        /// <returns></returns>
-        public static IEnumerator ToCoroutine(Action<string> action, string param = "")
-        {
-            action(param);
-            yield return null;
-        }
-
-        /// <summary>
-        /// Wraps function to IEnumerator
-        /// </summary>
-        /// <param name="action">Firebase method</param>
-        /// <returns></returns>
-        public static IEnumerator ToCoroutine(Action<object, FirebaseParam> action, object obj, FirebaseParam query)
-        {
-            action(obj, query);
-            yield return null;
-        }
-
-        /// <summary>
-        /// Wraps function to IEnumerator
-        /// </summary>
-        /// <param name="action">Firebase method</param>
-        /// <returns></returns>
-        public static IEnumerator ToCoroutine(Action<object, string> action, object obj, string param = "")
-        {
-            action(obj, param);
-            yield return null;
-        }
-
-        /// <summary>
-        /// Wraps function to IEnumerator
-        /// </summary>
-        /// <param name="action">Firebase method</param>
-        /// <returns></returns>
-        public static IEnumerator ToCoroutine(Action<string, bool, FirebaseParam> action, string json, bool isJson, FirebaseParam query)
-        {
-            action(json, isJson, query);
-            yield return null;
-        }
-
-        /// <summary>
-        /// Wraps function to IEnumerator
-        /// </summary>
-        /// <param name="action">Firebase method</param>
-        /// <returns></returns>
-        public static IEnumerator ToCoroutine(Action<string, bool, string> action, string json, bool isJson, string param = "")
-        {
-            action(json, isJson, param);
-            yield return null; ;
+            }
         }
 
 
@@ -670,84 +547,6 @@ namespace FirebaseCSharp
         public static Firebase CreateNew(string host, string credential = "")
         {
             return new FirebaseRoot(host, credential);
-        }
-
-        /**** SPECIAL CLASS ****/
-
-        private class CusteredHeaderCollection : WebHeaderCollection
-        {
-            public bool HostHeaderValueReplaced { get; private set; }
-
-            public string ClusterUrl { get; private set; }
-
-            public CusteredHeaderCollection(string commonClusterUrl) : base()
-            {
-                if (string.IsNullOrEmpty("commonClusterUrl"))
-                    throw new ArgumentNullException("commonClusterUrl");
-
-                this.ClusterUrl = commonClusterUrl;
-            }
-
-            public override string ToString()
-            {
-                this["Host"] = this.ClusterUrl;
-                string tmp = base.ToString();
-                this.HostHeaderValueReplaced = true;
-
-                return tmp;
-            }
-
-        }
-
-        public class SimpleUnityThread : MonoBehaviour
-        {
-            private static SimpleUnityThread _instance = null;
-            private static SimpleUnityThread Instance
-            {
-                get
-                {
-                    if(_instance == null)
-                    {
-                        _instance = new GameObject("FirebaseCSharp").AddComponent<SimpleUnityThread>();
-                    }
-
-                    return _instance;
-                }
-            }
-
-            private object workQueueLock = new object();
-            private Queue<Action> workQueue = new Queue<Action>();
-
-            void Update()
-            {
-                if(workQueue.Count > 0)
-                {
-                    lock(workQueueLock)
-                    {
-                        workQueue.Dequeue().Invoke();
-                    }
-                }
-            }
-
-            public static void Dispatch(Action work)
-            {
-                if (work == null)
-                    return;
-
-                lock (Instance.workQueueLock)
-                {
-                    Instance.workQueue.Enqueue(work);
-                }
-            }
-
-            /// <summary>
-            /// Call this when on the Unity-thread to make sure we've managed setup properly before using anything else
-            /// NOTE: If this is called while on a worker-thread, things won't work.
-            /// </summary>
-            public static void Prepare()
-            {
-                SimpleUnityThread t = Instance;
-            }
         }
     }
 }

@@ -30,9 +30,9 @@ Copyright (c) 2016  M Dikra Prasetya
 
 */
 
-using System.Security.Cryptography.X509Certificates;
-using System.Net.Security;
-using System.Net;
+//using System.Security.Cryptography.X509Certificates;
+//using System.Net.Security;
+//using System.Net;
 
 namespace FirebaseCSharp
 {
@@ -71,11 +71,13 @@ namespace FirebaseCSharp
 
         public FirebaseRoot(string _host, string _cred = "")
         {
+            /*
             if (firstTimeInitiated)
             {
                 ServicePointManager.ServerCertificateValidationCallback += new RemoteCertificateValidationCallback((sender, certificate, chain, policyErrors) => { return true; });
                 firstTimeInitiated = false;
             }
+            */
 
             root = this;
             host = _host;
@@ -94,9 +96,11 @@ namespace FirebaseCSharp
             }
         }
 
+        /*
         private static bool RemoteCertificateValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return true; // override certificate, we trust Firebase :D
         }
+        */
     }
 }

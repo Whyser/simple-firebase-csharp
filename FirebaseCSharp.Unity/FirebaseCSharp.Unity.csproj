@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B5C80ACF-6AF1-4DC7-809D-B22D65C1A909}</ProjectGuid>
+    <ProjectGuid>{2E06637A-4E04-4D52-9BF6-D4B004A53E53}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>FirebaseCSharp</RootNamespace>
-    <AssemblyName>FirebaseCSharp</AssemblyName>
+    <RootNamespace>FirebaseCSharp.Unity</RootNamespace>
+    <AssemblyName>FirebaseCSharp.Unity</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -41,6 +41,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CoroutineRunner.cs" />
     <Compile Include="DataSnapshot.cs" />
     <Compile Include="Firebase.cs" />
     <Compile Include="FirebaseError.cs" />
